@@ -18,7 +18,9 @@ builder.Services.AddScoped<HoldService>();
 builder.Services.AddHostedService<HoldExpiryService>();
 
 // The React app is served from a different origin than the API.
-builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+// "Date" is exposed so the browser can sync its countdown to the server clock.
+builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
+    p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("Date")));
 
 var app = builder.Build();
 

@@ -30,6 +30,18 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  frontend:
+    build: ./frontend
+    environment:
+      # Backend URL as seen from the user's BROWSER (not from inside Docker). Written to config.js at start.
+      API_URL: "${API_URL:-http://localhost:8080}"
+    ports:
+      # Open http://localhost:3000. Set FRONTEND_PORT if 3000 is already used on your machine.
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
   # Backend test-suite. Not started by `docker compose up` (profile "tests").
   # Run with:  docker compose run --rm backend-tests
   # Each test class creates and drops its own throw-away database (sa_test_*) on the compose
