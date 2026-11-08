@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Hosting;
+using Xunit;
 using Npgsql;
 
 namespace SchoolAdmission.Tests;
@@ -49,6 +51,14 @@ public sealed class TestDatabase : IAsyncDisposable
     }
 }
 
+/// <summary>One throw-away database shared by the tests of a class (tests create their own classes/students).</summary>
+public sealed class DatabaseFixture : IAsyncLifetime
+{
+    public TestDatabase Db { get; private set; } = null!;
+    public async Task InitializeAsync() => Db = await TestDatabase.CreateAsync();
+    public async Task DisposeAsync() => await Db.DisposeAsync();
+}
+
 /// <summary>One running copy of the real API (own Kestrel-less test server) bound to the given database.</summary>
 public sealed class ApiInstance : WebApplicationFactory<Program>
 {
@@ -68,12 +78,18 @@ public sealed class ApiInstance : WebApplicationFactory<Program>
         builder.UseSetting("ConnectionStrings:Default", _connectionString);
         builder.UseSetting("HOLD_DURATION_SECONDS", _holdSeconds.ToString());
         builder.UseSetting("EXPIRY_SWEEP_INTERVAL_SECONDS", _sweepSeconds.ToString());
+        // Config (not ConfigureLogging) because appsettings.json sets Logging:LogLevel and wins over code.
+        builder.UseSetting("Logging:LogLevel:Default", "Warning");
+        builder.UseSetting("Logging:LogLevel:Microsoft", "Warning");
     }
 }
 
 public static class Api
 {
     public static string Student(int n) => (20150000000000000L + n).ToString();
+
+    /// <summary>A random 17-digit id, for tests that read per-student lists across classes (/me/holds).</summary>
+    public static string UniqueStudent() => (30000000000000000L + Random.Shared.NextInt64(0, 60000000000000000L)).ToString();
 
     public static async Task<string> CreateClassAsync(HttpClient c, int seats, string name = "Class 6 - Morning Shift")
     {

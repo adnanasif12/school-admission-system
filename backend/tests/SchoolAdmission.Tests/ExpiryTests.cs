@@ -3,24 +3,24 @@ using Xunit;
 
 namespace SchoolAdmission.Tests;
 
-public class ExpiryTests : IAsyncLifetime
+public class ExpiryTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
     private TestDatabase _db = null!;
     private ApiInstance _api = null!;
     private HttpClient _client = null!;
 
-    public async Task InitializeAsync()
+    public Task InitializeAsync()
     {
-        _db = await TestDatabase.CreateAsync();
+        _db = fixture.Db;
         // 1-second holds, background sweep every second.
         _api = new ApiInstance(_db.ConnectionString, holdSeconds: 1, sweepSeconds: 1);
         _client = _api.CreateClient();
+        return Task.CompletedTask;
     }
 
     public async Task DisposeAsync()
     {
         await _api.DisposeAsync();
-        await _db.DisposeAsync();
     }
 
     [Fact]

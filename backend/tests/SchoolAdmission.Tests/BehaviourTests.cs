@@ -4,23 +4,23 @@ using Xunit;
 
 namespace SchoolAdmission.Tests;
 
-public class BehaviourTests : IAsyncLifetime
+public class BehaviourTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
     private TestDatabase _db = null!;
     private ApiInstance _api = null!;
     private HttpClient _client = null!;
 
-    public async Task InitializeAsync()
+    public Task InitializeAsync()
     {
-        _db = await TestDatabase.CreateAsync();
+        _db = fixture.Db;
         _api = new ApiInstance(_db.ConnectionString);
         _client = _api.CreateClient();
+        return Task.CompletedTask;
     }
 
     public async Task DisposeAsync()
     {
         await _api.DisposeAsync();
-        await _db.DisposeAsync();
     }
 
     [Fact]
@@ -82,16 +82,17 @@ public class BehaviourTests : IAsyncLifetime
     [Fact]
     public async Task OneActiveHoldPerStudentPerClass_ButAnotherClassIsFine()
     {
+        var student = Api.UniqueStudent();
         var a = await Api.CreateClassAsync(_client, 5, "Class 6 - Morning Shift");
         var b = await Api.CreateClassAsync(_client, 5, "Class 6 - Day Shift");
 
-        Assert.Equal(HttpStatusCode.Created, (await Api.HoldAsync(_client, a, Api.Student(1))).StatusCode);
-        var dup = await Api.HoldAsync(_client, a, Api.Student(1));
+        Assert.Equal(HttpStatusCode.Created, (await Api.HoldAsync(_client, a, student)).StatusCode);
+        var dup = await Api.HoldAsync(_client, a, student);
         Assert.Equal(HttpStatusCode.Conflict, dup.StatusCode);
         Assert.Equal("ALREADY_APPLIED", (await Api.Json(dup)).GetProperty("error").GetString());
-        Assert.Equal(HttpStatusCode.Created, (await Api.HoldAsync(_client, b, Api.Student(1))).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await Api.HoldAsync(_client, b, student)).StatusCode);
 
-        var mine = await Api.Json(await Api.Send(_client, HttpMethod.Get, "/me/holds", Api.Student(1)));
+        var mine = await Api.Json(await Api.Send(_client, HttpMethod.Get, "/me/holds", student));
         Assert.Equal(2, mine.GetArrayLength());
         Assert.All(mine.EnumerateArray(), h =>
         {

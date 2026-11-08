@@ -3,21 +3,21 @@ using Xunit;
 
 namespace SchoolAdmission.Tests;
 
-public class ConcurrencyTests : IAsyncLifetime
+public class ConcurrencyTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
     private TestDatabase _db = null!;
     private ApiInstance _api = null!;
 
-    public async Task InitializeAsync()
+    public Task InitializeAsync()
     {
-        _db = await TestDatabase.CreateAsync();
+        _db = fixture.Db;
         _api = new ApiInstance(_db.ConnectionString);
+        return Task.CompletedTask;
     }
 
     public async Task DisposeAsync()
     {
         await _api.DisposeAsync();
-        await _db.DisposeAsync();
     }
 
     [Fact]
