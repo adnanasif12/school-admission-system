@@ -5,6 +5,8 @@ services:
       POSTGRES_DB: school_admission
       POSTGRES_USER: school
       POSTGRES_PASSWORD: school_pw
+    # The test-suite opens many connections at once (parallel test classes, 2 app instances).
+    command: ["postgres", "-c", "max_connections=300"]
     volumes:
       # Named volume: data survives `docker compose down` (only `down -v` wipes it).
       - pgdata:/var/lib/postgresql/data
@@ -28,5 +30,24 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Backend test-suite. Not started by `docker compose up` (profile "tests").
+  # Run with:  docker compose run --rm backend-tests
+  # Each test class creates and drops its own throw-away database (sa_test_*) on the compose
+  # Postgres server, so your real school_admission data is never touched.
+  backend-tests:
+    profiles: ["tests"]
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    working_dir: /src
+    volumes:
+      - ./backend:/src
+      - nuget_cache:/root/.nuget/packages
+    environment:
+      TEST_DB_ADMIN: "Host=db;Port=5432;Username=school;Password=school_pw;Database=postgres"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["dotnet", "test", "SchoolAdmission.sln", "--nologo", "-v", "minimal", "--logger", "console;verbosity=normal"]
+
 volumes:
   pgdata:
+  nuget_cache:
