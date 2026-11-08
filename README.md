@@ -41,3 +41,7 @@ docker compose run --rm backend-tests
 - The first run downloads NuGet packages (a couple of minutes); later runs take well under a minute.
 - The suite includes the concurrency tests: 60 parallel hold requests on a 5-seat class must yield
   exactly 5 successes, and the same with two separate backend instances sharing one database.
+
+## Manual API check
+
+With the stack running, `bash scripts/verify-api.sh` walks the main flow with curl (create class, holds, 409s, double confirm, cancel, /me/holds) and prints every status code and JSON body.
