@@ -1,0 +1,32 @@
+# Runs the backend test-suite against a throw-away PostgreSQL, using only Docker:
+#   docker compose -f backend/docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from tests
+services:
+  testdb:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+    # Concurrency tests open many connections.
+    command: ["postgres", "-c", "max_connections=300", "-c", "fsync=off"]
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  tests:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    working_dir: /src
+    volumes:
+      - ./:/src
+      - nuget_cache:/root/.nuget/packages
+    environment:
+      TEST_DB_ADMIN: "Host=testdb;Port=5432;Username=postgres;Password=postgres;Database=postgres"
+    depends_on:
+      testdb:
+        condition: service_healthy
+    command: ["dotnet", "test", "SchoolAdmission.sln", "--nologo", "-v", "minimal", "--logger", "console;verbosity=normal"]
+
+volumes:
+  nuget_cache:
