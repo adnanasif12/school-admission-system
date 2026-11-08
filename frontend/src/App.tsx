@@ -100,8 +100,13 @@ export default function App() {
   return (
     <div className="page">
       <header className="top">
-        <h1>School Admission</h1>
-        <p className="muted">First come, first served. Apply, then pay the fee before the timer ends.</p>
+        <div className="brand">
+          <span className="logo" aria-hidden="true">🎓</span>
+          <div>
+            <h1>School Admission</h1>
+            <p className="tagline">First come, first served. Apply, then pay the fee before the timer ends.</p>
+          </div>
+        </div>
       </header>
 
       <StudentIdBar value={studentInput} onChange={setStudentInput} />

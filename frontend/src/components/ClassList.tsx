@@ -15,6 +15,8 @@ interface Props {
   onApply: (classId: string) => void;
 }
 
+const pct = (part: number, total: number): number => (total > 0 ? Math.min(100, (part / total) * 100) : 0);
+
 function hasActiveApplication(apps: Application[] | null, classId: string): boolean {
   return (apps ?? []).some(
     (a) =>
@@ -42,8 +44,13 @@ export function ClassList({ studentId, applications, refreshKey, applyingClassId
     <section>
       <div className="section-head">
         <h2>Classes</h2>
-        <span className="muted">Seat counts update automatically every few seconds.</span>
+        <div className="legend" aria-hidden="true">
+          <span><i className="dot-confirmed" />Confirmed</span>
+          <span><i className="dot-held" />On hold</span>
+          <span><i className="dot-free" />Available</span>
+        </div>
       </div>
+      <p className="muted" style={{ marginBottom: 14 }}>Seat counts update automatically every few seconds.</p>
 
       {error && (
         <div className="notice error" role="alert">
@@ -54,7 +61,7 @@ export function ClassList({ studentId, applications, refreshKey, applyingClassId
 
       {classes === null && !error && <p className="muted">Loading classes…</p>}
       {classes?.length === 0 && (
-        <p className="card muted">No classes yet. A school admin can add one in the “Create class” tab.</p>
+        <p className="card empty">No classes yet. A school admin can add one in the “Create class” tab.</p>
       )}
 
       <div className="class-grid">
@@ -72,7 +79,18 @@ export function ClassList({ studentId, applications, refreshKey, applyingClassId
                 : '';
           return (
             <article className="card class-card" key={c.id}>
-              <h3>{c.name}</h3>
+              <div className="card-top">
+                <h3>{c.name}</h3>
+                <span className={full ? 'chip full' : 'chip open'}>{full ? 'Full' : 'Open'}</span>
+              </div>
+              <div
+                className="meter"
+                role="img"
+                aria-label={`${c.confirmedSeats} confirmed, ${c.heldSeats} on hold, ${c.availableSeats} available of ${c.totalSeats}`}
+              >
+                <span className="seg confirmed" style={{ width: `${pct(c.confirmedSeats, c.totalSeats)}%` }} />
+                <span className="seg held" style={{ width: `${pct(c.heldSeats, c.totalSeats)}%` }} />
+              </div>
               <dl className="seats">
                 <div><dt>Total</dt><dd>{c.totalSeats}</dd></div>
                 <div><dt>On hold</dt><dd>{c.heldSeats}</dd></div>

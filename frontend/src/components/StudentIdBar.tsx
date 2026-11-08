@@ -10,7 +10,7 @@ export function StudentIdBar({ value, onChange }: Props) {
   const valid = isValidStudentId(value);
 
   return (
-    <section className="student-bar" aria-label="Student identity">
+    <section className={valid ? 'student-bar ready' : 'student-bar'} aria-label="Student identity">
       <label htmlFor="student-id">Student birth registration number (17 digits)</label>
       <input
         id="student-id"

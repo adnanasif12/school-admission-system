@@ -72,14 +72,14 @@ export function ApplicationCard({ app, studentId, highlight, onChanged, onNotice
   }
 
   return (
-    <article className={`card app-card${highlight ? ' highlight' : ''}`}>
+    <article className={`card app-card st-${status.toLowerCase()}${highlight ? ' highlight' : ''}`}>
       <div className="app-head">
         <h3>{app.className}</h3>
         <span className={`badge ${status.toLowerCase()}`}>{LABEL[status]}</span>
       </div>
 
       {active && (
-        <p className="countdown" aria-live="off">
+        <p className={remainingMs < 60_000 ? 'countdown urgent' : 'countdown'} aria-live="off">
           Time left to pay: <strong>{formatRemaining(remainingMs)}</strong>
         </p>
       )}

@@ -38,7 +38,7 @@ export function MyApplications({ studentId, applications, error, highlightId, on
 
       {applications === null && !error && <p className="muted">Loading your applications…</p>}
       {applications?.length === 0 && (
-        <p className="card muted">You have no applications yet. Open the Classes tab and press “Apply”.</p>
+        <p className="card empty">You have no applications yet. Open the Classes tab and press “Apply”.</p>
       )}
 
       <div className="app-list">
