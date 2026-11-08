@@ -5,7 +5,7 @@ Online school admission on a first-come, first-served basis. A student applies f
 paying the fee **confirms** the admission, otherwise the seat goes back to the pool.
 
 - Backend: .NET 8 Web API + PostgreSQL (EF Core) in [backend/](backend/)
-- Frontend: React 18 + Vite in `frontend/` (added in phase 2)
+- Frontend: React 18 + Vite + TypeScript in [frontend/](frontend/), served by nginx
 - Everything runs with Docker only; you do not need .NET or Node installed.
 
 ## Run the app
@@ -14,7 +14,10 @@ paying the fee **confirms** the admission, otherwise the seat goes back to the p
 docker compose up --build
 ```
 
+- **Open the app: <http://localhost:3000>**
 - Backend API: <http://localhost:8080> (health check: <http://localhost:8080/health>)
+- If port 3000 is already used on your machine, pick another one:
+  `FRONTEND_PORT=3100 docker compose up --build` and open <http://localhost:3100>.
 - Data lives in the named volume `pgdata`, so it survives `docker compose down` and `docker compose up`.
   (`docker compose down -v` deletes it.)
 
@@ -23,8 +26,9 @@ Configuration (environment variables on the `backend` service in [docker-compose
 | Variable | Default | Meaning |
 |---|---|---|
 | `ConnectionStrings__Default` | set in compose | PostgreSQL connection string |
-| `HOLD_DURATION_SECONDS` | `600` | How long a seat hold lasts. Override: `HOLD_DURATION_SECONDS=30 docker compose up` |
+| `HOLD_DURATION_SECONDS` | `600` | How long a seat hold lasts, e.g. `export HOLD_DURATION_SECONDS=30` then `docker compose up -d` (use `export`; an inline `VAR=x docker compose` prefix did not reach the containers in Git Bash on Windows) |
 | `EXPIRY_SWEEP_INTERVAL_SECONDS` | `5` | How often the background service marks lapsed holds `EXPIRED` |
+| `API_URL` (frontend service) | `http://localhost:8080` | Backend URL as seen by the **browser**. Written to `/config.js` when the frontend container starts, so it can change without rebuilding the image |
 
 ## Run the backend tests (Docker only)
 

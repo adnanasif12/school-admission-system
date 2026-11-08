@@ -42,7 +42,9 @@ async function request<T>(method: string, path: string, opts: Options = {}): Pro
   const dateHeader = res.headers.get('Date');
   if (dateHeader) {
     const t = Date.parse(dateHeader);
-    if (!Number.isNaN(t)) clockSkewMs = t - Date.now();
+    // The Date header is truncated to whole seconds, so the true server time lies in [t, t+1s):
+    // use the midpoint to keep the error within +/-0.5s instead of up to 1s.
+    if (!Number.isNaN(t)) clockSkewMs = t + 500 - Date.now();
   }
 
   if (res.status === 204) return undefined as T;
