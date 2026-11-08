@@ -38,21 +38,22 @@ public class ClassService(AdmissionDbContext db, TimeProvider time)
     public async Task<List<ClassResponse>> ListAsync(CancellationToken ct)
     {
         var now = time.GetUtcNow().UtcDateTime;
-        var rows = await Counts(now).OrderBy(c => c.CreatedAt).ThenBy(c => c.Id).ToListAsync(ct);
+        var rows = await Project(db.Classes.AsNoTracking().OrderBy(c => c.CreatedAt).ThenBy(c => c.Id), now).ToListAsync(ct);
         return rows.Select(ToResponse).ToList();
     }
 
     public async Task<ClassResponse> GetAsync(string classId, CancellationToken ct)
     {
         var now = time.GetUtcNow().UtcDateTime;
-        var row = await Counts(now).FirstOrDefaultAsync(c => c.Id == classId, ct)
+        var row = await Project(db.Classes.AsNoTracking().Where(c => c.Id == classId), now).FirstOrDefaultAsync(ct)
                   ?? throw new ApiException(404, "CLASS_NOT_FOUND", "We could not find that class.");
         return ToResponse(row);
     }
 
     // A HELD row only counts while expiresAt is still in the future, so seats come back the instant a
     // hold lapses, even before the background sweeper has flipped the row to EXPIRED.
-    private IQueryable<ClassCounts> Counts(DateTime now) => db.Classes.AsNoTracking().Select(c => new ClassCounts(
+    // Filter/order BEFORE projecting: EF cannot translate OrderBy/Where over the projected record.
+    private IQueryable<ClassCounts> Project(IQueryable<SchoolClass> source, DateTime now) => source.Select(c => new ClassCounts(
         c.Id, c.Name, c.TotalSeats, c.CreatedAt,
         db.Holds.Count(h => h.ClassId == c.Id && h.Status == HoldStatus.HELD && h.ExpiresAt > now),
         db.Holds.Count(h => h.ClassId == c.Id && h.Status == HoldStatus.CONFIRMED)));

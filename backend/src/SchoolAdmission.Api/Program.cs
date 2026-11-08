@@ -14,6 +14,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(HoldOptions.FromConfiguration(builder.Configuration)));
 builder.Services.AddScoped<ClassService>();
 builder.Services.AddScoped<HoldService>();
+builder.Services.AddHostedService<HoldExpiryService>();
 
 // The React app is served from a different origin than the API.
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
