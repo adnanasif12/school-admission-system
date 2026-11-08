@@ -1,1 +1,41 @@
+# --- Confidential assignment brief: never publish ---
 Asst_Software_Engineer_Project_Assignment.pdf
+*.pdf
+
+# --- Secrets and local environment ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+
+# --- .NET build output and test results ---
+bin/
+obj/
+TestResults/
+*.user
+*.suo
+.vs/
+*.log
+
+# --- Node / Vite ---
+node_modules/
+dist/
+*.local
+npm-debug.log*
+.vite/
+coverage/
+
+# --- Browser / e2e test output ---
+playwright-report/
+test-results/
+shots/
+
+# --- IDE and OS files ---
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
