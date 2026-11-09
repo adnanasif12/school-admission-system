@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { friendlyError } from '../errors';
-import { formatRemaining, useNow } from '../hooks';
+import { useNow } from '../hooks';
+import { effectiveStatus, formatRemaining } from '../time';
 import type { Application, HoldStatus } from '../types';
 import type { NoticeData } from './Notice';
 
@@ -27,8 +28,8 @@ export function ApplicationCard({ app, studentId, highlight, onChanged, onNotice
   const checkedExpiry = useRef<string | null>(null);
 
   const remainingMs = Date.parse(app.expiresAt) - now;
-  const lapsed = app.status === 'HELD' && remainingMs <= 0;
-  const status: HoldStatus = lapsed ? 'EXPIRED' : app.status; // flips locally, no reload needed
+  const status: HoldStatus = effectiveStatus(app.status, Date.parse(app.expiresAt), now); // flips locally, no reload
+  const lapsed = app.status === 'HELD' && status === 'EXPIRED';
   const active = status === 'HELD';
 
   // The moment the countdown hits zero, ask the server what really happened (once per application).
