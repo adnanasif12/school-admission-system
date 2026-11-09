@@ -18,6 +18,7 @@ services:
 
   backend:
     build: ./backend
+    image: school-admission-backend
     environment:
       # Database connection is configured purely through the environment.
       ConnectionStrings__Default: "Host=db;Port=5432;Database=school_admission;Username=school;Password=school_pw"
@@ -60,6 +61,78 @@ services:
         condition: service_healthy
     command: ["dotnet", "test", "SchoolAdmission.sln", "--nologo", "-v", "minimal", "--logger", "console;verbosity=normal"]
 
+  # ---------------------------------------------------------------------------
+  # Optional services, only started when their profile is requested.
+  # ---------------------------------------------------------------------------
+
+  # Frontend unit tests (Vitest) + type-check:  docker compose run --rm frontend-tests
+  frontend-tests:
+    profiles: ["tests"]
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules # keep Linux packages away from a Windows/macOS node_modules
+    command: ["sh", "-c", "npm ci --no-audit --no-fund && npm run typecheck && npm test"]
+
+  # Browser end-to-end test:  docker compose run --rm frontend-e2e
+  # Uses its own backend with a 30 s hold so "expiry without reload" can be tested. Same Postgres server.
+  backend-e2e:
+    profiles: ["e2e"]
+    build: ./backend
+    image: school-admission-backend
+    environment:
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=school_admission;Username=school;Password=school_pw"
+      HOLD_DURATION_SECONDS: "30"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend-e2e:
+    profiles: ["e2e"]
+    image: mcr.microsoft.com/playwright:v1.48.0-jammy
+    working_dir: /work
+    volumes:
+      - ./frontend/e2e:/work
+      - e2e_node_modules:/work/node_modules
+    environment:
+      APP_URL: "http://frontend:80"
+      API_TO: "http://backend-e2e:8080"
+    depends_on:
+      - frontend
+      - backend-e2e
+    command: ["sh", "-c", "npm ci --no-audit --no-fund && node e2e.mjs"]
+
+  # Two backend processes on ONE database:  docker compose --profile scale run --rm two-backend-proof
+  # Second instance is also published on http://localhost:8081 for manual poking.
+  backend2:
+    profiles: ["scale"]
+    build: ./backend
+    image: school-admission-backend
+    environment:
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=school_admission;Username=school;Password=school_pw"
+      HOLD_DURATION_SECONDS: "${HOLD_DURATION_SECONDS:-600}"
+    ports:
+      - "8081:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  two-backend-proof:
+    profiles: ["scale"]
+    image: node:20-alpine
+    working_dir: /proof
+    volumes:
+      - ./scripts:/proof:ro
+    environment:
+      BACKEND_URLS: "http://backend:8080,http://backend2:8080"
+    depends_on:
+      - backend
+      - backend2
+    command: ["node", "two-backend-proof.mjs"]
+
 volumes:
   pgdata:
   nuget_cache:
+  frontend_node_modules:
+  e2e_node_modules:
