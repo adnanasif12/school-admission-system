@@ -77,6 +77,10 @@ the data you created in the app (tests use their own throw-away databases or the
 | Frontend end-to-end in a real browser (Playwright, 30 checks) | `docker compose run --rm frontend-e2e` | ~2 min (first run downloads a ~2 GB browser image) |
 | Two-backend proof on real containers | `docker compose --profile scale run --rm two-backend-proof` | ~30 s |
 
+The end-to-end test and the two-backend proof create demo classes (named "E2E Class ..." and "Proof ...") in the
+app's database, so you will see them in the web app afterwards. They are harmless; `docker compose down -v`
+resets everything.
+
 These services live in compose profiles (`tests`, `e2e`, `scale`), so a plain `docker compose up` never starts them.
 
 ### Backend tests
