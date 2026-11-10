@@ -25,6 +25,8 @@ The AI ran the backend and frontend tests, called the live API with `curl` again
 
 ## Candidate notes
 
-_(To be filled in by me: what I asked for, what I changed or rejected, what I reviewed myself, and what I would do differently.)_
-
--
+- I planned the work in three phases (backend, frontend, docs and bonus) and checked each phase before moving on.
+- I tested the API myself with PowerShell (create class, hold, 409 when full, confirm, cancel) and checked that data survives `docker compose down` and `up`.
+- I tested the UI by hand in the browser: apply, countdown, pay, cancel and expiry.
+- I asked for the tests to run with Docker only, because the reviewers will only have Docker.
+- Next time I would write the core seat logic and the concurrency test myself first, then use AI for the UI and docs.
