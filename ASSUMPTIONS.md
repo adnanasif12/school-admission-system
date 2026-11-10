@@ -1,33 +1,37 @@
 # Assumptions
 
-What the brief left open, and what I chose (reason in brackets).
+What the brief left open, and what I chose (short reason in brackets).
 
-## Identity
-- Student ID is exactly 17 digits in `X-Student-Id`; missing or malformed gives 400 (there is no auth scheme to fail).
-- No login and no admin authentication, so anyone can create a class (the brief says no login).
-- Confirming or cancelling someone else's application gives 403; an unknown id gives 404 (two different problems).
-- `GET /holds/{id}` needs no header (the brief's example shows none); if sent and not the owner, 403.
+## Identity and access
+- Student ID is exactly 17 digits in `X-Student-Id`; missing or malformed gives 400 (no auth scheme).
+- No login or admin authentication (brief: no login).
+- Someone else's hold: 403 on confirm or cancel, 404 if unknown (different problems).
+- `GET /holds/{id}` needs no header, 403 if a non-owner's header is sent (brief's example has none).
 
 ## Applications
-- A student can apply again after a cancel or an expiry (only `HELD` and `CONFIRMED` count as active).
-- A student may hold seats in different classes at once (the limit is per class).
-- Cancelling a `CONFIRMED` application gives 409 (fee paid, refunds are not in the brief); cancelling twice gives 204.
-- Confirm works only on your own, unexpired `HELD` application; a repeat returns 200 and counts once; expired or cancelled gives 409.
-- "Pay fee" is simulated, as the brief says.
-- `HOLD_DURATION_SECONDS` defaults to 600; an invalid value falls back to 600.
+- Re-applying after cancel or expiry is allowed (only `HELD` and `CONFIRMED` are active).
+- Different classes can be held at once (limit is per class).
+- A `CONFIRMED` application cannot be cancelled: 409 (fee paid, no refunds in brief); cancelling twice gives 204.
+- Confirm needs your own, unexpired `HELD` hold; a repeat gives 200 and counts once; expired or cancelled gives 409.
+- "Pay fee" is simulated (per brief).
+- `HOLD_DURATION_SECONDS` defaults to 600; invalid values fall back to 600.
 
-## Expiry
-- Lazy: seat counts ignore `HELD` rows past `expiresAt`, so the seat returns at that exact moment.
-- A background sweeper (every 5 s) also stores `EXPIRED`; correctness does not depend on it.
-- Times are UTC (ISO-8601); the backend clock decides expiry.
+## Seats and expiry
+- Lazy expiry: counts ignore `HELD` rows past `expiresAt` (seat returns instantly, no API call).
+- A background sweeper (every 5 s) also stores `EXPIRED` (tidy data; counts don't depend on it).
+- Times are UTC, ISO-8601, from the backend clock (one clock decides).
 
 ## Concurrency
-- Every seat decision runs in one transaction holding `SELECT ... FOR UPDATE` on the class row; a partial unique index backs up one active hold per student per class.
-- The xUnit "two instances" test runs two hosts inside one process, not two OS processes. The real proof is `scripts/two-backend-proof.mjs` with two backend containers on one database (see README).
+- Seat decisions run in a transaction with `SELECT ... FOR UPDATE` on the class row (requests queue, works across processes).
+- A partial unique index allows one active hold per student per class (backstop).
+- The xUnit "two instances" test is one process with two hosts, not two OS processes; the real proof is `scripts/two-backend-proof.mjs` with two containers.
 
-## Classes and UI
-- Name required (up to 200 characters); seats 1 to 1,000,000; duplicate names allowed; no edit or delete (not among the 8 endpoints).
-- Lists reload every 4 s ("a few seconds"), paused while the tab is hidden.
-- The countdown follows the server clock via the `Date` header (about 0.5 s accuracy); at zero it shows `EXPIRED` and re-checks the server.
-- Apply is disabled with no seats, no valid ID, or an active application; the server enforces all three anyway.
+## Classes
+- Name required (max 200 characters), seats 1 to 1,000,000 (catches typos).
+- Duplicate names allowed; no edit or delete (not among the 8 endpoints).
+
+## Frontend
+- Lists reload every 4 s (brief: "a few seconds"), paused in hidden tabs.
+- Countdown follows the server clock via the `Date` header; at zero it shows `EXPIRED` and re-checks.
+- Apply is disabled with no seats, no valid ID or an active application (server enforces it anyway).
 - CORS allows any origin (no cookies or credentials).
